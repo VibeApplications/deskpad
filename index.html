@@ -1,0 +1,692 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>DeskPad — your phone is the remote</title>
+<meta name="description" content="Control your Mac or PC from your phone over Wi-Fi. Trackpad, keyboard, media and screen viewer — paired by QR code, end-to-end encrypted, no account." />
+<meta property="og:title" content="DeskPad — your phone is the remote" />
+<meta property="og:description" content="Control your computer from your phone over Wi-Fi. Paired by QR, end-to-end encrypted." />
+<meta property="og:type" content="website" />
+<meta name="theme-color" content="#090A0E" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%233A3D44'/%3E%3Cstop offset='1' stop-color='%2317181C'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23g)'/%3E%3Crect x='13' y='14' width='38' height='27' rx='5' fill='%23fff' fill-opacity='0.14' stroke='white' stroke-width='3.4'/%3E%3Cline x1='32' y1='41' x2='32' y2='46' stroke='white' stroke-width='3.4' stroke-linecap='round'/%3E%3Cline x1='24' y1='47.5' x2='40' y2='47.5' stroke='white' stroke-width='3.4' stroke-linecap='round'/%3E%3Cpath d='M26.5 19.5 L26.5 36.5 L31.1 32.1 L34.2 38.5 L36.8 37.3 L33.7 31 L39.3 31 Z' fill='white' stroke='%2317181C' stroke-width='1.1' stroke-linejoin='round'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#090A0E; --bg2:#0C0E14; --card:#14171F; --card2:#1A1E28;
+    --line:#232833; --line2:#2C323F;
+    --text:#EBEEF5; --muted:#9BA2B0; --faint:#5B6270;
+    --blue:#2F80FF; --blue-2:#5B9BFF; --blue-soft:rgba(47,128,255,.13);
+    --cyan:#35E0DE; --cyan-soft:rgba(53,224,222,.12);
+    --green:#34D65C;
+    --display:'Space Grotesk',system-ui,sans-serif;
+    --body:'Inter',system-ui,-apple-system,sans-serif;
+    --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+    --maxw:1120px;
+    --ease:cubic-bezier(.22,.61,.36,1);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;background:var(--bg);color:var(--text);font-family:var(--body);
+    font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;overflow-x:hidden;
+  }
+  a{color:inherit;text-decoration:none}
+  ::selection{background:var(--cyan);color:#04121a}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+  .mono{font-family:var(--mono)}
+
+  /* ambient glow field */
+  .glow{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+  .glow::before,.glow::after{content:'';position:absolute;border-radius:50%;filter:blur(120px);opacity:.5}
+  .glow::before{width:620px;height:620px;top:-260px;left:-160px;background:radial-gradient(circle,rgba(47,128,255,.28),transparent 62%)}
+  .glow::after{width:560px;height:560px;top:120px;right:-220px;background:radial-gradient(circle,rgba(53,224,222,.16),transparent 62%)}
+
+  /* ---- nav ---- */
+  header{position:sticky;top:0;z-index:50;backdrop-filter:blur(14px);
+    background:rgba(9,10,14,.66);border-bottom:1px solid transparent;transition:border-color .3s}
+  header.scrolled{border-bottom-color:var(--line)}
+  nav{display:flex;align-items:center;justify-content:space-between;height:66px}
+  .brand{display:flex;align-items:center;gap:10px;font-family:var(--display);font-weight:700;font-size:19px;letter-spacing:-.01em}
+  .brand svg{width:26px;height:26px}
+  .nav-links{display:flex;align-items:center;gap:28px}
+  .nav-links a{color:var(--muted);font-size:14.5px;font-weight:500;transition:color .2s}
+  .nav-links a:hover{color:var(--text)}
+  .nav-cta{padding:9px 16px;border-radius:10px;background:var(--blue);color:#fff !important;font-weight:600;font-size:14px;transition:transform .15s,background .2s}
+  .nav-cta:hover{background:var(--blue-2);transform:translateY(-1px)}
+  @media(max-width:720px){.nav-links a:not(.nav-cta){display:none}}
+
+  /* ---- hero ---- */
+  .hero{position:relative;z-index:1;padding:72px 0 40px}
+  .hero-grid{display:grid;grid-template-columns:1.02fr .98fr;gap:56px;align-items:center}
+  @media(max-width:920px){.hero-grid{grid-template-columns:1fr;gap:40px}}
+  .eyebrow{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);font-size:12px;font-weight:500;
+    letter-spacing:.02em;color:var(--cyan);background:var(--cyan-soft);border:1px solid rgba(53,224,222,.22);
+    padding:6px 12px;border-radius:999px;margin-bottom:26px}
+  .eyebrow .lock{width:12px;height:12px}
+  h1{font-family:var(--display);font-weight:700;font-size:clamp(38px,5.6vw,60px);line-height:1.03;
+    letter-spacing:-.025em;margin:0 0 20px}
+  h1 .accent{color:var(--blue-2)}
+  .lede{font-size:clamp(16px,2vw,18.5px);color:var(--muted);max-width:30em;margin:0 0 34px}
+  .cta-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .btn{display:inline-flex;align-items:center;gap:11px;font-weight:600;font-size:15.5px;
+    padding:14px 22px;border-radius:13px;cursor:pointer;border:1px solid transparent;transition:transform .15s var(--ease),background .2s,border-color .2s}
+  .btn svg{width:19px;height:19px;flex:none}
+  .btn-primary{background:var(--blue);color:#fff}
+  .btn-primary:hover{background:var(--blue-2);transform:translateY(-2px)}
+  .btn-ghost{background:var(--card);color:var(--text);border-color:var(--line2)}
+  .btn-ghost:hover{border-color:var(--faint);transform:translateY(-2px)}
+  .os-alt{margin-top:14px;font-size:13.5px;color:var(--faint)}
+  .os-alt a{color:var(--muted);border-bottom:1px solid var(--line2);padding-bottom:1px}
+  .os-alt a:hover{color:var(--text)}
+  .trust{display:flex;gap:22px;flex-wrap:wrap;margin-top:30px}
+  .trust span{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+  .trust svg{width:15px;height:15px;color:var(--green)}
+
+  /* ---- interactive demo (signature) ---- */
+  .demo{position:relative;aspect-ratio:1/1;min-height:420px}
+  .stage{position:absolute;inset:0}
+  .device{position:absolute;border-radius:20px;background:linear-gradient(180deg,#171b24,#0f1219);
+    border:1px solid var(--line2);box-shadow:0 30px 80px -30px rgba(0,0,0,.8)}
+  /* desktop */
+  .monitor{top:6%;right:0;width:66%;aspect-ratio:16/10;padding:8px;overflow:hidden}
+  .screen{width:100%;height:100%;border-radius:12px;background:
+      radial-gradient(120% 120% at 20% 0%,#1d2740,#0b0f1a 70%);position:relative;overflow:hidden}
+  .menubar{position:absolute;top:0;left:0;right:0;height:16px;background:rgba(255,255,255,.05);
+    display:flex;align-items:center;gap:5px;padding:0 8px}
+  .menubar i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.22)}
+  .win{position:absolute;border-radius:8px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.035)}
+  .win.a{top:34%;left:12%;width:44%;height:42%}
+  .win.b{top:22%;left:40%;width:46%;height:48%;background:rgba(47,128,255,.06);border-color:rgba(47,128,255,.18)}
+  .win .bar{height:12px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:4px;padding:0 6px}
+  .win .bar i{width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.25)}
+  .cursor{position:absolute;width:18px;height:18px;z-index:4;transition:transform .06s linear;will-change:transform}
+  .cursor svg{width:100%;height:100%;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))}
+  .click-ring{position:absolute;width:16px;height:16px;border-radius:50%;border:2px solid var(--cyan);
+    transform:translate(-50%,-50%) scale(.3);opacity:0;pointer-events:none;z-index:3}
+  .click-ring.go{animation:ring .5s var(--ease)}
+  @keyframes ring{0%{opacity:.9;transform:translate(-50%,-50%) scale(.3)}100%{opacity:0;transform:translate(-50%,-50%) scale(2.4)}}
+
+  /* phone */
+  .phone{bottom:0;left:0;width:40%;max-width:210px;aspect-ratio:9/19;padding:9px;border-radius:30px}
+  .phone .glassface{width:100%;height:100%;border-radius:22px;background:linear-gradient(180deg,#0e1119,#0a0c12);
+    border:1px solid var(--line);position:relative;overflow:hidden;display:flex;flex-direction:column}
+  .notch{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:34%;height:5px;border-radius:3px;background:#000}
+  .phone-top{padding:22px 14px 8px;text-align:center}
+  .phone-top .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);
+    box-shadow:0 0 0 4px rgba(52,214,92,.16);margin-right:6px;vertical-align:middle}
+  .phone-top .lbl{font-size:10.5px;color:var(--muted);font-weight:600;vertical-align:middle}
+  .pad{flex:1;margin:6px 12px 14px;border-radius:14px;background:
+      repeating-linear-gradient(135deg,rgba(255,255,255,.014) 0 10px,transparent 10px 20px),rgba(47,128,255,.05);
+    border:1px dashed rgba(47,128,255,.28);position:relative;cursor:grab;touch-action:none;
+    display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .pad:active{cursor:grabbing}
+  .pad-hint{font-family:var(--mono);font-size:10.5px;color:var(--cyan);opacity:.85;text-align:center;
+    padding:0 10px;transition:opacity .3s;pointer-events:none}
+  .pad.touched .pad-hint{opacity:0}
+  .tap-dot{position:absolute;width:26px;height:26px;border-radius:50%;background:radial-gradient(circle,rgba(53,224,222,.5),transparent 70%);
+    transform:translate(-50%,-50%) scale(0);pointer-events:none}
+  .tap-dot.go{animation:tap .4s var(--ease)}
+  @keyframes tap{0%{transform:translate(-50%,-50%) scale(.2);opacity:1}100%{transform:translate(-50%,-50%) scale(1.6);opacity:0}}
+
+  /* link beam */
+  .beam{position:absolute;left:34%;top:52%;width:30%;height:2px;z-index:2;pointer-events:none}
+  .beam .line{position:absolute;inset:0;background:linear-gradient(90deg,rgba(53,224,222,.1),rgba(53,224,222,.6),rgba(47,128,255,.1))}
+  .beam .pulse{position:absolute;top:-2px;width:6px;height:6px;border-radius:50%;background:var(--cyan);
+    box-shadow:0 0 10px var(--cyan);animation:flow 2.2s linear infinite}
+  @keyframes flow{0%{left:-4%;opacity:0}12%{opacity:1}88%{opacity:1}100%{left:100%;opacity:0}}
+  .beam .tag{position:absolute;top:-26px;left:50%;transform:translateX(-50%);white-space:nowrap;
+    font-family:var(--mono);font-size:10px;color:var(--cyan);background:rgba(53,224,222,.08);
+    border:1px solid rgba(53,224,222,.2);border-radius:999px;padding:3px 9px;display:flex;align-items:center;gap:6px}
+  .beam .tag svg{width:10px;height:10px}
+  @media(prefers-reduced-motion:reduce){.beam .pulse{animation:none;left:48%}}
+
+  /* ---- section scaffolding ---- */
+  section{position:relative;z-index:1}
+  .band{padding:96px 0}
+  .band.alt{background:var(--bg2);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .sec-eyebrow{font-family:var(--mono);font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--cyan);margin-bottom:14px}
+  .sec-title{font-family:var(--display);font-weight:700;font-size:clamp(26px,3.4vw,38px);letter-spacing:-.02em;line-height:1.1;margin:0 0 16px}
+  .sec-sub{color:var(--muted);max-width:36em;font-size:16.5px}
+  .sec-head{margin-bottom:52px}
+
+  /* ---- steps ---- */
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+  @media(max-width:820px){.steps{grid-template-columns:1fr}}
+  .step{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:26px 24px;position:relative;overflow:hidden}
+  .step .num{font-family:var(--mono);font-weight:700;font-size:13px;color:var(--blue);letter-spacing:.05em}
+  .step h3{font-family:var(--display);font-weight:600;font-size:19px;letter-spacing:-.01em;margin:14px 0 8px}
+  .step p{color:var(--muted);font-size:14.5px;margin:0}
+  .step .rule{position:absolute;left:24px;right:24px;top:52px;height:1px;background:linear-gradient(90deg,var(--blue),transparent)}
+  .step code{font-family:var(--mono);font-size:12.5px;color:var(--cyan);background:rgba(53,224,222,.08);padding:2px 7px;border-radius:6px}
+
+  /* ---- pairing explainer ---- */
+  .pair-grid{display:grid;grid-template-columns:.9fr 1.1fr;gap:52px;align-items:center}
+  @media(max-width:880px){.pair-grid{grid-template-columns:1fr;gap:36px}}
+  .pair-vis{display:flex;align-items:center;justify-content:center;gap:0;position:relative}
+  .panel-card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;width:230px;flex:none;box-shadow:0 24px 60px -30px rgba(0,0,0,.7)}
+  .panel-card .ptitle{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);margin-bottom:12px;font-weight:600}
+  .qr{width:100%;aspect-ratio:1;background:#fff;border-radius:12px;padding:12px;display:grid;
+    grid-template-columns:repeat(11,1fr);grid-template-rows:repeat(11,1fr);gap:2px}
+  .qr i{background:#0a0c12;border-radius:1px}
+  .qr i.off{background:transparent}
+  .arrow{flex:none;width:64px;display:flex;align-items:center;justify-content:center;color:var(--cyan)}
+  .arrow svg{width:40px;height:40px}
+  @media(max-width:520px){.arrow{transform:rotate(90deg);width:auto;height:48px}}
+  .phone-scan{width:150px;flex:none;aspect-ratio:9/18;border-radius:24px;background:linear-gradient(180deg,#171b24,#0f1219);
+    border:1px solid var(--line2);padding:7px;box-shadow:0 24px 60px -30px rgba(0,0,0,.7)}
+  .phone-scan .cam{width:100%;height:100%;border-radius:18px;background:radial-gradient(120% 90% at 50% 20%,#12283a,#0a0f18);
+    position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
+  .scan-frame{width:64%;aspect-ratio:1;border-radius:12px;position:relative}
+  .scan-frame span{position:absolute;width:16px;height:16px;border-color:var(--cyan);border-style:solid;border-width:0}
+  .scan-frame span:nth-child(1){top:0;left:0;border-top-width:2px;border-left-width:2px;border-top-left-radius:6px}
+  .scan-frame span:nth-child(2){top:0;right:0;border-top-width:2px;border-right-width:2px;border-top-right-radius:6px}
+  .scan-frame span:nth-child(3){bottom:0;left:0;border-bottom-width:2px;border-left-width:2px;border-bottom-left-radius:6px}
+  .scan-frame span:nth-child(4){bottom:0;right:0;border-bottom-width:2px;border-right-width:2px;border-bottom-right-radius:6px}
+  .scanline{position:absolute;left:8%;right:8%;height:2px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);top:18%;animation:scan 2.4s var(--ease) infinite}
+  @keyframes scan{0%,100%{top:20%}50%{top:78%}}
+  @media(prefers-reduced-motion:reduce){.scanline{animation:none;top:50%}}
+  .pair-points{list-style:none;padding:0;margin:26px 0 0}
+  .pair-points li{display:flex;gap:13px;padding:11px 0;border-top:1px solid var(--line)}
+  .pair-points li:first-child{border-top:0}
+  .pair-points .ic{flex:none;width:32px;height:32px;border-radius:9px;background:var(--blue-soft);display:flex;align-items:center;justify-content:center;color:var(--blue-2)}
+  .pair-points .ic svg{width:17px;height:17px}
+  .pair-points b{display:block;font-weight:600;font-size:15px;margin-bottom:1px}
+  .pair-points p{margin:0;color:var(--muted);font-size:14px;line-height:1.5}
+
+  /* ---- features ---- */
+  .feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  @media(max-width:820px){.feat-grid{grid-template-columns:1fr 1fr}}
+  @media(max-width:520px){.feat-grid{grid-template-columns:1fr}}
+  .feat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px;transition:border-color .25s,transform .25s var(--ease)}
+  .feat:hover{border-color:var(--line2);transform:translateY(-3px)}
+  .feat .ic{width:38px;height:38px;border-radius:10px;background:var(--card2);display:flex;align-items:center;justify-content:center;color:var(--cyan);margin-bottom:15px}
+  .feat .ic svg{width:20px;height:20px}
+  .feat h3{font-family:var(--display);font-weight:600;font-size:17px;margin:0 0 6px;letter-spacing:-.01em}
+  .feat p{color:var(--muted);font-size:14px;margin:0;line-height:1.55}
+
+  /* ---- download ---- */
+  .dl-note{margin-top:10px;font-size:12.5px;line-height:1.45;color:var(--muted);opacity:.85}
+  .go-soon{opacity:.45;cursor:default;pointer-events:none}
+  .dl-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:8px}
+  @media(max-width:820px){.dl-grid{grid-template-columns:1fr}}
+  .dl{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:26px;transition:border-color .25s,transform .2s var(--ease)}
+  .dl:hover{border-color:var(--blue);transform:translateY(-3px)}
+  .dl.detected{border-color:var(--blue);box-shadow:0 0 0 1px var(--blue),0 20px 50px -30px rgba(47,128,255,.5)}
+  .dl .os-ic{width:34px;height:34px;color:var(--text);margin-bottom:16px}
+  .dl .os-ic svg{width:100%;height:100%}
+  .dl h3{font-family:var(--display);font-weight:600;font-size:19px;margin:0 0 4px}
+  .dl .req{font-family:var(--mono);font-size:12px;color:var(--faint);margin-bottom:20px}
+  .dl .yours{font-family:var(--mono);font-size:11px;color:var(--blue-2);margin-bottom:8px;height:14px}
+  .dl .go{margin-top:auto;display:inline-flex;align-items:center;justify-content:center;gap:9px;
+    padding:12px;border-radius:11px;background:var(--card2);color:var(--text);font-weight:600;font-size:14.5px;
+    border:1px solid var(--line2);transition:background .2s,border-color .2s}
+  .dl .go:hover{background:#232936;border-color:var(--faint)}
+  .dl.detected .go{background:var(--blue);border-color:var(--blue);color:#fff}
+  .dl.detected .go:hover{background:var(--blue-2)}
+  .dl .go svg{width:16px;height:16px}
+  .dl-note{margin-top:26px;font-size:13.5px;color:var(--faint);text-align:center}
+  .dl-note code{font-family:var(--mono);color:var(--muted)}
+
+  /* app cta */
+  .appcta{margin-top:34px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;
+    background:linear-gradient(100deg,var(--blue-soft),transparent);border:1px solid var(--line);border-radius:18px;padding:22px 26px}
+  .appcta .txt{flex:1;min-width:220px}
+  .appcta b{font-family:var(--display);font-size:17px;font-weight:600}
+  .appcta p{margin:3px 0 0;color:var(--muted);font-size:14px}
+  .appcta .price{font-family:var(--mono);color:var(--cyan);font-size:13px}
+  .store-badges{display:flex;gap:12px;flex-wrap:wrap}
+  .store{display:inline-flex;align-items:center;gap:9px;background:#000;border:1px solid var(--line2);border-radius:11px;padding:10px 16px;font-weight:600;font-size:14px;transition:border-color .2s,transform .15s}
+  .store:hover{border-color:var(--faint);transform:translateY(-2px)}
+  .store svg{width:18px;height:18px}
+  .store small{display:block;font-size:9.5px;color:var(--muted);font-weight:500;line-height:1}
+  .store span{font-size:14px;line-height:1.15}
+
+  /* footer */
+  footer{position:relative;z-index:1;border-top:1px solid var(--line);padding:44px 0 56px;margin-top:20px}
+  .foot{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+  .foot .brand{font-size:16px}
+  .foot-links{display:flex;gap:22px;flex-wrap:wrap}
+  .foot-links a{color:var(--muted);font-size:14px;transition:color .2s}
+  .foot-links a:hover{color:var(--text)}
+  .foot-legal{color:var(--faint);font-size:12.5px;margin-top:16px}
+
+  .reveal{opacity:0;transform:translateY(18px);transition:opacity .7s var(--ease),transform .7s var(--ease)}
+  .reveal.in{opacity:1;transform:none}
+  @media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}
+  :focus-visible{outline:2px solid var(--cyan);outline-offset:3px;border-radius:6px}
+</style>
+</head>
+<body>
+<div class="glow" aria-hidden="true"></div>
+
+<header id="top">
+  <div class="wrap">
+    <nav>
+      <a class="brand" href="#top" aria-label="DeskPad home">
+        <svg viewBox="0 0 64 64"><defs><linearGradient id="bm" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3A3D44"/><stop offset="1" stop-color="#17181C"/></linearGradient><linearGradient id="bmsh" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.14"/><stop offset="0.5" stop-color="#fff" stop-opacity="0"/></linearGradient></defs><rect width="64" height="64" rx="14" fill="url(#bm)"/><rect width="64" height="30" rx="14" fill="url(#bmsh)"/><rect x="13" y="14" width="38" height="27" rx="5" fill="#fff" fill-opacity="0.10" stroke="#fff" stroke-width="3.4"/><line x1="32" y1="41" x2="32" y2="46" stroke="#fff" stroke-width="3.4" stroke-linecap="round"/><line x1="24" y1="47.5" x2="40" y2="47.5" stroke="#fff" stroke-width="3.4" stroke-linecap="round"/><path d="M26.5 19.5 L26.5 36.5 L31.1 32.1 L34.2 38.5 L36.8 37.3 L33.7 31 L39.3 31 Z" fill="#fff" stroke="#17181C" stroke-width="1.1" stroke-linejoin="round"/></svg>
+        DeskPad
+      </a>
+      <div class="nav-links">
+        <a href="#how">How it works</a>
+        <a href="#pairing">Pairing</a>
+        <a href="#features">Features</a>
+        <a class="nav-cta" href="#download">Download</a>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <!-- HERO -->
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <span class="eyebrow">
+          <svg class="lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg>
+          Local network · end-to-end encrypted
+        </span>
+        <h1>Your phone is the remote.<br /><span class="accent">Your computer obeys.</span></h1>
+        <p class="lede">DeskPad turns your phone into a trackpad, keyboard, media controller and screen viewer for your Mac or PC — over your own Wi-Fi, with nothing in the cloud.</p>
+        <div class="cta-row">
+          <a class="btn btn-primary" id="heroDownload" href="https://github.com/VibeApplications/deskpad/releases/latest/download/DeskPadSetup.exe" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 11 5 5 5-5"/><path d="M5 20h14"/></svg>
+            <span id="heroDownloadLabel">Download the server</span>
+          </a>
+          <a class="btn btn-ghost" href="#how">See how it works</a>
+        </div>
+        <p class="os-alt" id="osAlt"></p>
+        <div class="trust">
+          <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4.5 4.5L19 7"/></svg> No account, no cloud</span>
+          <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4.5 4.5L19 7"/></svg> ~5&nbsp;ms on Wi-Fi</span>
+          <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4.5 4.5L19 7"/></svg> Open the app, scan, done</span>
+        </div>
+      </div>
+
+      <!-- signature: playable trackpad -> desktop -->
+      <div class="demo" aria-hidden="true">
+        <div class="stage">
+          <div class="device monitor">
+            <div class="screen" id="screen">
+              <div class="menubar"><i></i><i></i><i></i></div>
+              <div class="win a"><div class="bar"><i></i><i></i><i></i></div></div>
+              <div class="win b"><div class="bar"><i></i><i></i><i></i></div></div>
+              <div class="click-ring" id="ring"></div>
+              <div class="cursor" id="cursor">
+                <svg viewBox="0 0 24 24" fill="#fff"><path d="M5 3l14 8-6 1.5L11 19 5 3z"/></svg>
+              </div>
+            </div>
+          </div>
+
+          <div class="beam">
+            <div class="line"></div>
+            <div class="pulse"></div>
+            <div class="tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg> encrypted · 5&nbsp;ms</div>
+          </div>
+
+          <div class="device phone">
+            <div class="glassface">
+              <div class="notch"></div>
+              <div class="phone-top"><span class="dot"></span><span class="lbl">DESKTOP · connected</span></div>
+              <div class="pad" id="pad">
+                <div class="pad-hint" id="padHint">drag here to move<br/>the cursor →</div>
+                <div class="tap-dot" id="tapDot"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="band alt" id="how">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="sec-eyebrow">Setup · about a minute</div>
+        <h2 class="sec-title">Three steps, then you're driving</h2>
+        <p class="sec-sub">Install the small server on the computer you want to control. Everything else happens on your phone.</p>
+      </div>
+      <div class="steps">
+        <div class="step reveal">
+          <div class="num">01</div><div class="rule"></div>
+          <h3>Run the server</h3>
+          <p>Download and open DeskPad on your Mac or PC. It sits in the menu bar / tray and shows a <code>control panel</code> with a pairing code.</p>
+        </div>
+        <div class="step reveal">
+          <div class="num">02</div><div class="rule"></div>
+          <h3>Scan the QR</h3>
+          <p>Open the DeskPad app, tap <code>Scan QR</code>, and point it at the code on your screen. The phone gets a key over the camera — never the network.</p>
+        </div>
+        <div class="step reveal">
+          <div class="num">03</div><div class="rule"></div>
+          <h3>Control from anywhere</h3>
+          <p>Trackpad, keyboard, media keys and the live screen viewer are now in your hand. This phone is remembered — no scanning next time.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PAIRING EXPLAINER -->
+  <section class="band" id="pairing">
+    <div class="wrap pair-grid">
+      <div class="pair-vis reveal" aria-hidden="true">
+        <div class="panel-card">
+          <div class="ptitle">Pair a phone</div>
+          <div class="qr" id="qr"></div>
+        </div>
+        <div class="arrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15"/><path d="m13 6 6 6-6 6"/></svg>
+        </div>
+        <div class="phone-scan">
+          <div class="cam">
+            <div class="scan-frame"><span></span><span></span><span></span><span></span></div>
+            <div class="scanline"></div>
+          </div>
+        </div>
+      </div>
+      <div class="reveal">
+        <div class="sec-eyebrow">Pairing &amp; security</div>
+        <h2 class="sec-title">The key travels by light, not by network</h2>
+        <p class="sec-sub">A typed PIN is short enough to guess. DeskPad shows a QR that carries a full 256-bit key — your phone reads it through the camera, so it never crosses the air where anyone could capture it.</p>
+        <ul class="pair-points">
+          <li>
+            <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg></span>
+            <div><b>End-to-end encrypted</b><p>Every keystroke and frame is sealed with authenticated encryption. Even on shared Wi-Fi, the traffic is unreadable.</p></div>
+          </li>
+          <li>
+            <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v6c0 4.5 3.4 7.6 8 9 4.6-1.4 8-4.5 8-9V6l-8-3Z"/></svg></span>
+            <div><b>Paired once, trusted after</b><p>After the first scan your phone holds a private token. Reconnecting is instant — and you can revoke any device from the control panel.</p></div>
+          </li>
+          <li>
+            <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.4-7-10a7 7 0 0 1 14 0c0 5.6-7 10-7 10Z"/><circle cx="12" cy="11" r="2.4"/></svg></span>
+            <div><b>Stays on your network</b><p>No relay servers, no accounts, no telemetry. Phone and computer talk directly on the same Wi-Fi and nowhere else.</p></div>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="band alt" id="features">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="sec-eyebrow">What's in your hand</div>
+        <h2 class="sec-title">A full remote, not just a mouse</h2>
+      </div>
+      <div class="feat-grid">
+        <div class="feat reveal"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M12 8v5"/></svg></div><h3>Precision trackpad</h3><p>Drag to move, tap to click, two fingers to scroll. The whole phone becomes the pad.</p></div>
+        <div class="feat reveal"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8"/></svg></div><h3>Real keyboard</h3><p>Type straight into any app, with modifier keys and shortcuts that actually land.</p></div>
+        <div class="feat reveal"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m7 5 11 7-11 7V5Z"/></svg></div><h3>Media control</h3><p>Play, pause, skip and adjust volume from the couch — for whatever's on screen.</p></div>
+        <div class="feat reveal"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="19" height="13" rx="2"/><path d="M9 21h6M12 17v4"/></svg></div><h3>Screen viewer</h3><p>See the computer's screen on your phone and tap where you want the pointer to go.</p></div>
+        <div class="feat reveal"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg></div><h3>50+ app remotes</h3><p>Purpose-built controls for players, browsers and presentations — not just generic keys.</p></div>
+        <div class="feat reveal"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v6c0 4.5 3.4 7.6 8 9 4.6-1.4 8-4.5 8-9V6l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg></div><h3>Encrypted by default</h3><p>256-bit QR pairing and end-to-end encryption, with per-device tokens you can revoke.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DOWNLOAD -->
+  <section class="band" id="download">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="sec-eyebrow">Get the desktop server</div>
+        <h2 class="sec-title">Download for your computer</h2>
+        <p class="sec-sub">Free to run. The server is what your phone connects to — grab it for the machine you want to control.</p>
+      </div>
+
+      <div class="dl-grid reveal">
+        <div class="dl" data-os="mac">
+          <div class="os-ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.3 12.9c0-2 1.6-2.9 1.7-3-1-1.4-2.4-1.6-2.9-1.6-1.2-.1-2.4.7-3 .7-.6 0-1.6-.7-2.6-.7-1.3 0-2.6.8-3.3 2-1.4 2.4-.4 6 1 8 .6 1 1.4 2.1 2.4 2 1-.04 1.3-.6 2.5-.6s1.5.6 2.6.6c1 0 1.7-1 2.4-2 .5-.8.8-1.5.8-1.6-.02-.01-2.1-.8-2.1-3.2zM14.5 6.9c.55-.67.9-1.6.8-2.5-.77.03-1.7.5-2.27 1.17-.5.6-.94 1.55-.82 2.45.86.07 1.74-.44 2.29-1.12z"/></svg></div>
+          <h3>macOS</h3>
+          <div class="req" data-req>Apple silicon &amp; Intel</div>
+          <div class="yours" data-yours></div>
+          <span class="go go-soon" data-go aria-disabled="true">
+            <span data-golabel>Coming soon</span>
+          </span>
+        </div>
+        <div class="dl" data-os="windows">
+          <div class="os-ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.4 10.5 4.3V11.4H3V5.4ZM3 12.6H10.5V19.7L3 18.6V12.6ZM11.5 4.15 21 3V11.4H11.5V4.15ZM11.5 12.6H21V21L11.5 19.85V12.6Z"/></svg></div>
+          <h3>Windows</h3>
+          <div class="req" data-req>Windows 10 &amp; 11</div>
+          <div class="yours" data-yours></div>
+          <a class="go" data-go href="https://github.com/VibeApplications/deskpad/releases/latest/download/DeskPadSetup.exe" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 11 5 5 5-5"/><path d="M5 20h14"/></svg>
+            <span data-golabel>Download .exe</span>
+          </a>
+          <div class="dl-note">Unsigned installer — Windows may show a SmartScreen warning. Click <b>More info</b> → <b>Run anyway</b>.</div>
+        </div>
+        <div class="dl" data-os="linux">
+          <div class="os-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4.5c-1 1.5-1 4-.3 5.5.5 1-.7 2.3-1.5 3.5C6 15.5 6 18 7.5 19.5c1.2 1.2 8 1.2 9.2 0C18 18 18 15.5 17 13.5c-.8-1.2-2-2.5-1.5-3.5.7-1.5.7-4-.3-5.5-1-1.5-5-1.5-6 0Z"/><path d="M10 9h.01M14 9h.01"/></svg></div>
+          <h3>Linux</h3>
+          <div class="req" data-req>x64 · tar.gz</div>
+          <div class="yours" data-yours></div>
+          <span class="go go-soon" data-go aria-disabled="true">
+            <span data-golabel>Coming soon</span>
+          </span>
+        </div>
+      </div>
+      <p class="dl-note">Latest release · <code id="verLabel">v1.0</code>. First launch on macOS: right-click → Open. On Windows, allow it through SmartScreen the first time.</p>
+
+      <div class="appcta reveal">
+        <div class="txt">
+          <b>Then get the phone app</b>
+          <p>The remote itself. <span class="price">72-hour free trial, then $6.99 once.</span></p>
+        </div>
+        <div class="store-badges">
+          <a class="store" id="appStore" href="#" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.3 12.9c0-2 1.6-2.9 1.7-3-1-1.4-2.4-1.6-2.9-1.6-1.2-.1-2.4.7-3 .7-.6 0-1.6-.7-2.6-.7-1.3 0-2.6.8-3.3 2-1.4 2.4-.4 6 1 8 .6 1 1.4 2.1 2.4 2 1-.04 1.3-.6 2.5-.6s1.5.6 2.6.6c1 0 1.7-1 2.4-2 .5-.8.8-1.5.8-1.6-.02-.01-2.1-.8-2.1-3.2zM14.5 6.9c.55-.67.9-1.6.8-2.5-.77.03-1.7.5-2.27 1.17-.5.6-.94 1.55-.82 2.45.86.07 1.74-.44 2.29-1.12z"/></svg>
+            <span><small>Download on the</small>App Store</span>
+          </a>
+          <a class="store" id="playStore" href="#" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 3.2c-.3.2-.5.6-.5 1.1v15.4c0 .5.2.9.5 1.1l8.4-8.8L4 3.2Zm10 8.8 2.8-2.9-9.2-5.2c-.3-.2-.6-.2-.9-.1L14 12Zm0 0-6.3 8.2c.3.1.6 0 .9-.1l9.2-5.2L14 12Zm2.8 2.9L20 13.3c.7-.4.7-1.4 0-1.8l-3.2-1.8L13.9 12l2.9 2.9Z"/></svg>
+            <span><small>Get it on</small>Google Play</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <a class="brand" href="#top">
+        <svg viewBox="0 0 64 64"><defs><linearGradient id="bm2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3A3D44"/><stop offset="1" stop-color="#17181C"/></linearGradient><linearGradient id="bm2sh" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.14"/><stop offset="0.5" stop-color="#fff" stop-opacity="0"/></linearGradient></defs><rect width="64" height="64" rx="14" fill="url(#bm2)"/><rect width="64" height="30" rx="14" fill="url(#bm2sh)"/><rect x="13" y="14" width="38" height="27" rx="5" fill="#fff" fill-opacity="0.10" stroke="#fff" stroke-width="3.4"/><line x1="32" y1="41" x2="32" y2="46" stroke="#fff" stroke-width="3.4" stroke-linecap="round"/><line x1="24" y1="47.5" x2="40" y2="47.5" stroke="#fff" stroke-width="3.4" stroke-linecap="round"/><path d="M26.5 19.5 L26.5 36.5 L31.1 32.1 L34.2 38.5 L36.8 37.3 L33.7 31 L39.3 31 Z" fill="#fff" stroke="#17181C" stroke-width="1.1" stroke-linejoin="round"/></svg>
+        DeskPad
+      </a>
+      <div class="foot-links">
+        <a href="#how">How it works</a>
+        <a href="#pairing">Pairing</a>
+        <a href="#features">Features</a>
+        <a href="#download">Download</a>
+        <a id="ghLink" href="#" target="_blank" rel="noopener">GitHub</a>
+      </div>
+    </div>
+    <p class="foot-legal">Runs entirely on your local network. No accounts, no cloud, no tracking. © <span id="yr"></span> DeskPad.</p>
+  </div>
+</footer>
+
+<script>
+/* ============================================================
+   EDIT THESE when your builds and store listings are live.
+   Point them at your GitHub Releases assets (or any host).
+   ============================================================ */
+const DOWNLOADS = {
+  mac:     { url: '',    file: 'DeskPad.dmg',              label: 'Coming soon' },
+  windows: { url: 'https://github.com/VibeApplications/deskpad/releases/latest/download/DeskPadSetup.exe', file: 'DeskPadSetup.exe',         label: 'Download .exe' },
+  linux:   { url: '',    file: 'deskpad-linux-x64.tar.gz', label: 'Coming soon' },
+};
+const APP_STORE_URL = '#';
+const PLAY_STORE_URL = '#';
+const GITHUB_URL     = 'https://github.com/VibeApplications/deskpad';
+const VERSION        = 'v1.0.0';
+/* ============================================================ */
+
+document.getElementById('yr').textContent = new Date().getFullYear();
+document.getElementById('verLabel').textContent = VERSION;
+document.getElementById('appStore').href = APP_STORE_URL;
+document.getElementById('playStore').href = PLAY_STORE_URL;
+document.getElementById('ghLink').href = GITHUB_URL;
+
+/* ---- OS detection ---- */
+function detectOS(){
+  const uaPlat = (navigator.userAgentData && navigator.userAgentData.platform) || '';
+  const s = (uaPlat + ' ' + navigator.platform + ' ' + navigator.userAgent).toLowerCase();
+  if(/android/.test(s)) return 'android';
+  if(/iphone|ipad|ipod/.test(s)) return 'ios';
+  if(/win/.test(s)) return 'windows';
+  if(/mac/.test(s)) return 'mac';
+  if(/linux|x11|cros/.test(s)) return 'linux';
+  return null;
+}
+const OS_NAME = { mac:'macOS', windows:'Windows', linux:'Linux' };
+const os = detectOS();
+
+// wire each download card
+document.querySelectorAll('.dl').forEach(card=>{
+  const key = card.dataset.os;
+  const cfg = DOWNLOADS[key];
+  const go = card.querySelector('[data-go]');
+  if (cfg.url) {
+    go.href = cfg.url;
+    go.removeAttribute('aria-disabled');
+    go.classList.remove('go-soon');
+  } else {
+    // Not released yet — show a disabled state instead of a dead '#' link.
+    go.removeAttribute('href');
+    go.setAttribute('aria-disabled', 'true');
+    go.classList.add('go-soon');
+  }
+  card.querySelector('[data-golabel]').textContent = cfg.label;
+  if(key === os){
+    card.classList.add('detected');
+    card.querySelector('[data-yours]').textContent = '● detected on this computer';
+  }
+});
+
+// hero primary button + "on another platform" line
+const hero = document.getElementById('heroDownload');
+const heroLabel = document.getElementById('heroDownloadLabel');
+const osAlt = document.getElementById('osAlt');
+if(os && DOWNLOADS[os]){
+  heroLabel.textContent = 'Download for ' + OS_NAME[os];
+  hero.href = (DOWNLOADS[os].url && DOWNLOADS[os].url !== '#') ? DOWNLOADS[os].url : '#download';
+  const others = Object.keys(OS_NAME).filter(k=>k!==os)
+    .map(k=>`<a href="${DOWNLOADS[k].url}">${OS_NAME[k]}</a>`).join(' · ');
+  osAlt.innerHTML = 'Also for ' + others;
+} else if(os === 'ios' || os === 'android'){
+  // visitor is on their phone — nudge them to the store; the server is for a computer
+  heroLabel.textContent = 'Get the phone app';
+  const storeUrl = os === 'ios' ? APP_STORE_URL : PLAY_STORE_URL;
+  hero.href = (storeUrl && storeUrl !== '#') ? storeUrl : '#download';
+  osAlt.innerHTML = 'The desktop server installs on your <a href="#download">Mac, Windows or Linux</a> computer.';
+} else {
+  osAlt.innerHTML = 'Available for <a href="#download">macOS, Windows and Linux</a>.';
+}
+
+/* ---- decorative QR (illustrative, not scannable) ---- */
+(function(){
+  const grid = document.getElementById('qr');
+  if(!grid) return;
+  const N = 11;
+  // three 3x3 finder squares (top-left, top-right, bottom-left), drawn as a
+  // filled ring with a solid center dot — the recognizable QR corners.
+  const inFinder = (r,c)=>{
+    const zones = [[0,0],[0,N-3],[N-3,0]];
+    for(const [fr,fc] of zones){
+      if(r>=fr && r<fr+3 && c>=fc && c<fc+3){
+        const rr=r-fr, cc=c-fc;
+        return (rr===0||rr===2||cc===0||cc===2||(rr===1&&cc===1)); // ring + center
+      }
+    }
+    return null; // not part of a finder
+  };
+  let seed = 1337;
+  const rnd = ()=> (seed = (seed*1103515245+12345) & 0x7fffffff) / 0x7fffffff;
+  for(let r=0;r<N;r++){
+    for(let c=0;c<N;c++){
+      const cell=document.createElement('i');
+      const f = inFinder(r,c);
+      const on = (f===null) ? (rnd() > .48) : f;
+      if(!on) cell.classList.add('off');
+      grid.appendChild(cell);
+    }
+  }
+})();
+
+/* ---- signature: trackpad drives the cursor ---- */
+(function(){
+  const pad = document.getElementById('pad');
+  const screen = document.getElementById('screen');
+  const cursor = document.getElementById('cursor');
+  const ring = document.getElementById('ring');
+  const tapDot = document.getElementById('tapDot');
+  if(!pad || !screen || !cursor) return;
+
+  let cx = 0.42, cy = 0.5;          // cursor position as fraction of screen
+  let dragging = false, last = null, moved = 0, startT = 0;
+
+  function place(){
+    const w = screen.clientWidth, h = screen.clientHeight;
+    cx = Math.max(0.02, Math.min(0.96, cx));
+    cy = Math.max(0.06, Math.min(0.94, cy));
+    cursor.style.transform = `translate(${cx*w}px, ${cy*h}px)`;
+  }
+  place();
+  window.addEventListener('resize', place);
+
+  function down(e){
+    dragging = true; moved = 0; startT = Date.now();
+    last = pt(e); pad.classList.add('touched');
+    pad.setPointerCapture && e.pointerId!=null && pad.setPointerCapture(e.pointerId);
+  }
+  function move(e){
+    if(!dragging) return;
+    const p = pt(e);
+    const dx = (p.x - last.x), dy = (p.y - last.y);
+    moved += Math.abs(dx) + Math.abs(dy);
+    const sens = 1.6 / screen.clientWidth;
+    cx += dx * sens * (screen.clientWidth / pad.clientWidth) * 0.9;
+    cy += dy * sens * (screen.clientWidth / pad.clientWidth) * 0.9;
+    last = p; place();
+  }
+  function up(e){
+    if(!dragging) return;
+    dragging = false;
+    if(moved < 6 && Date.now()-startT < 350){
+      // tap -> click ripple on desktop + on pad
+      const w = screen.clientWidth, h = screen.clientHeight;
+      ring.style.left = (cx*w)+'px'; ring.style.top = (cy*h)+'px';
+      ring.classList.remove('go'); void ring.offsetWidth; ring.classList.add('go');
+      const r = pad.getBoundingClientRect();
+      const lp = last || {x:r.left+r.width/2,y:r.top+r.height/2};
+      tapDot.style.left = (lp.x - r.left)+'px'; tapDot.style.top = (lp.y - r.top)+'px';
+      tapDot.classList.remove('go'); void tapDot.offsetWidth; tapDot.classList.add('go');
+    }
+  }
+  function pt(e){ return { x: e.clientX, y: e.clientY }; }
+
+  pad.addEventListener('pointerdown', down);
+  window.addEventListener('pointermove', move);
+  window.addEventListener('pointerup', up);
+  pad.addEventListener('pointercancel', ()=> dragging=false);
+})();
+
+/* ---- scroll reveal + nav shadow ---- */
+const header = document.querySelector('header');
+addEventListener('scroll', ()=> header.classList.toggle('scrolled', scrollY > 8), {passive:true});
+
+if('IntersectionObserver' in window){
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(en=>{ if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target);} });
+  }, {threshold:.14});
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+} else {
+  document.querySelectorAll('.reveal').forEach(el=>el.classList.add('in'));
+}
+</script>
+</body>
+</html>
